@@ -4,8 +4,15 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "express": "^4.16.4",
+    "jsmpeg": "^1.0.0",
+    "moment": "^2.24.0",
+    "node-rtsp-stream": "0.0.4",
+    "node-rtsp-stream-es6": "^1.0.6",
     "request": "^2.88.0",
-    "ws": "^6.1.2"
+    "socket.io": "^2.2.0",
+    "ws": "^6.1.2",
+    "ws-heartbeat": "^1.0.4"
   },
   "devDependencies": {},
   "scripts": {

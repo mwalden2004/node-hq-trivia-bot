@@ -1,0 +1,133 @@
+<html>
+
+<head>
+<title>HQ Trivia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmpeg/0.2/jsmpg.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+</head>
+
+
+<body>
+
+		<div id="questionBox">
+				<div id="header" style="display: inline-block;">
+					<p style="font-size: 250%; display: inline;" class="qnum">Q1: </p><p style="bottom: 2.5px; display: inline; font-size: 150%;" class="qnum">some question </p>
+				</div>
+				<p>test</p>
+			</div>
+		</body>
+
+		<div id="scrollbox" style="color: white; z-index: 2; overflow: scroll; width: 100%; height: 10%; top: 90%; position: absolute;">
+			
+		</div>
+<canvas id="videoCanvas" width="1920" height="1080"/>
+
+
+
+
+<script>
+var socket = io("localhost/");
+var canvas = document.getElementById('videoCanvas');
+client = new WebSocket('ws://localhost:6541');
+
+player = new jsmpeg(client, {
+  canvas: canvas // Canvas should be a canvas DOM element
+});
+
+socket.on('message', function(msg){
+	var msg = JSON.parse(msg);
+	console.log(msg)
+	if (msg["type"] == "interaction"){
+		var scrollbox = document.getElementById('scrollbox');
+		var message = msg["metadata"]["message"];
+		var username = msg["metadata"]["username"];
+		// Create some element, e.g. div
+		var newElement = document.createElement('p');
+		newElement.innerHTML = username+": "+message;
+
+		scrollbox.appendChild(newElement);
+		scrollbox.scrollTop = scrollbox.scrollHeight;
+	}
+});
+
+
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c');
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+    position: relative;
+	font-family: 'M PLUS Rounded 1c', 'sans-serif';
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+#videoCanvas {
+    position: absolute;
+	width: 100%;
+	height: 100%;
+	z-index: 0;
+}
+
+#questionBox {
+    position: absolute;
+	width: 25rem;
+	height: 35rem;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background-color: white;
+	z-index: 5;
+	border-radius: 10px;
+}
+
+#questionBox > #header {
+	/*background-color: rgb(241, 241, 241);*/
+	width: 100%;
+	display: flex; 
+    align-items: center;
+	line-height:50px;
+}
+
+</style>
+
+</html>

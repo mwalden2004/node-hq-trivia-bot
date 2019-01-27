@@ -6,6 +6,7 @@ const request = require('request');
 const fs = require('fs');
 const WebSocket = require('ws');
 const spawn = require('child_process').spawn;
+const moment = require('moment');
 let connected = false;
 if (process.env.process_restarting) {
 	delete process.env.process_restarting;
@@ -14,18 +15,29 @@ if (process.env.process_restarting) {
 }
 const configExists = fs.existsSync("./config.json");
 const logfile = "./game_logs";
+const app = require('express')();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const port = 80
 
-let quedMessages = {};
+const HQTrivia = require("./src/game_types/trivia/index.js");
+const HQWords = require("./src/game_types/words/index.js");
 
+const Stream = require('node-rtsp-stream')
 
+let quedMessages = [];
+
+const newLine = require('os').EOL;
+
+let connections = [];
 
 if (configExists == false){
 	readline.question(`What is your Phone Number for HQ? `, (phone) => {
 		request.post({
 		  url: 'https://api-quiz.hype.space/verifications',
 		  headers: {
-			  "User-Agent": "HQ-iOS/89 CFNetwork/808.2.16 Darwin/16.3.0",
-			  "x-hq-client": "iOS/1.3.6 b89"
+			  "User-Agent": "hq-viewer/1.6.1 (iPhone; iOS 11.1.1; Scale/3.00)",
+			  "x-hq-client": "Android/1.6.1"
 		  },
 		  form: {
 			method: "sms",
@@ -43,7 +55,7 @@ if (configExists == false){
 						  url: 'https://api-quiz.hype.space/verifications/'+verifyId,
 						  headers: {
 							  "User-Agent": "HQ-iOS/89 CFNetwork/808.2.16 Darwin/16.3.0",
-							  "x-hq-client": "iOS/1.3.6 b89"
+							  "x-hq-client": "Android/1.6.1"
 						  },
 						  form: {
 							code: code
@@ -95,7 +107,7 @@ if (configExists == false){
 										env: { process_restarting: 1 },
 										stdio: 'ignore'
 									}).unref();
-									
+									process.kill()
 								}else{
 									console.log("ERROR: "+parsed["error"]);
 								}
@@ -109,21 +121,48 @@ if (configExists == false){
 		});
 	})
 }else{
+
+	stream = new Stream({
+		name: 'DEBUG',
+		streamUrl: "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_175k.mov",
+		wsPort: 6541,
+		ffmpegOptions: {
+			'-q': `1`
+		}
+	  });
+	  app.get('/', (req, res) => {
+		  res.sendFile(__dirname +"/src/web/index.html")
+	  })
+
+	  io.on('connection', function(socket){
+		thisid = Math.random();
+		connections.push({socket: socket, id: thisid})
+		socket.on('disconnect', function(){
+		  let number = 0;
+		  connections.forEach(element => {
+			  if (element.id == thisid){
+					connections.splice(number,1)
+					number=number+1;
+			  }
+		  });
+		});
+	  });
+
+	let gameHook;
 	fs.readFile('./config.json', 'utf8', function(err, rawconfig){
 		const config = JSON.parse(rawconfig);
 		
 		const config_headers = {
-            'User-Agent':       'HQ-iOS/89 CFNetwork/808.2.16 Darwin/16.3.0',
-            'Connection':       'keep-alive',
-            'x-hq-stk':         'MQ==',
-            'x-hq-device':      'iPhone6,1',
-            'Accept':           '*/*',
-            'Accept-Language':  'en-us',
-            'x-hq-client':      'iOS/1.3.6 b89',
+			 'User-Agent': 'HQ-iOS/121 CFNetwork/975.0.3 Darwin/18.2.0'
+			, 'x-hq-client': 'iOS/1.3.27 b121'
+			, 'x-hq-lang': 'en'
+			, 'x-hq-country': 'US'
+			, 'x-hq-stk': 'MQ=='
+			, 'x-hq-timezone': 'America/Chicago',
             'Authorization':    `Bearer ${config["authToken"]}`
         }
 		
-		function handleConnectionToSocket(broadcast){
+		function handleConnectionToSocket(broadcast,gameType,debug){
 			
 						/*
 						{
@@ -142,8 +181,19 @@ if (configExists == false){
 						  },
 						}
 						*/
-			
-			const socketUrl = broadcast.socketUrl.replace("https", "wss");
+/*
+			if (gameType == "words"){
+				gameHook = HQWords(broadcast, gameType)
+			}else{
+				gameHook = HQTrivia(broadcast, gameType)
+			}*/
+
+			let socketUrl = "";
+			if (debug){
+				socketUrl = "ws://hqecho.herokuapp.com"
+			}else{
+				socketUrl = broadcast.socketUrl.replace("https", "wss");
+			}
 			const gameid = broadcast["broadcastId"];
 			if (fs.existsSync(logfile+"/"+gameid) == false){
 				fs.mkdirSync(logfile+"/"+gameid);
@@ -155,9 +205,9 @@ if (configExists == false){
 					}
 				}); 
 			}
-			function logMessage(LMSG){
-				const logFile = logfile+"/"+gameid+"/gameLog.json"
-				fs.appendFile(logFile, JSON.stringify(LMSG), function (err) {
+			function logMessage(FileName,LMSG){
+				const logFile = logfile+"/"+gameid+"/"+FileName+".json"
+				fs.appendFile(logFile, JSON.stringify(LMSG)+","+newLine, function (err) {
 					if (err){
 						console.log("Write Error: "+err);
 					}
@@ -166,8 +216,8 @@ if (configExists == false){
 			const ws = new WebSocket(socketUrl, {
 				headers: {
 					'Authorization': `Bearer ${config["authToken"]}`
-					, 'User-Agent': 'okhttp/3.8.0'
-					, 'x-hq-client': 'Android/1.5.1'
+					, 'User-Agent': 'HQ-iOS/121 CFNetwork/975.0.3 Darwin/18.2.0'
+					, 'x-hq-client': 'iOS/1.3.27 b121'
 					, 'x-hq-lang': 'en'
 					, 'x-hq-country': 'US'
 					, 'x-hq-stk': 'MQ=='
@@ -182,6 +232,32 @@ if (configExists == false){
 			ws.on('open', () => {
 				console.log(`Connected to websocket - ${socketUrl}`);
 				connected = true;
+
+				let sending = false;
+
+				setInterval(() => {
+					if (ws.readyState === WebSocket.OPEN){
+						if (!sending){
+							sending = true;
+							ws.send(JSON.stringify({type: "ping"}))
+							sending = false;
+						}
+					}
+				}, 5000)
+
+				setInterval(() => {
+					if (ws.readyState === WebSocket.OPEN){
+						if (quedMessages.length !== 0){
+							if (!sending){
+								sending = true;
+								ws.send(quedMessages[0]);
+								quedMessages.splice(0,1)
+								sending = false;
+							}
+						}
+					}
+				}, 200)
+
 			});
 			ws.on('close', () => {
 				console.log('Disconnected from websocket');
@@ -194,14 +270,36 @@ if (configExists == false){
 				try {
 					const decoded = JSON.parse(message);
 					
-					logMessage(decoded);
+					connections.forEach(element => {
+						element.socket.emit("message",message)
+					})
+
+					logMessage("gameLog.json",decoded);
+					const type = decoded["type"]
 					console.log(decoded)
+
+					if (decoded["type"] !== "interaction"){
+						logMessage("SocketLogs.json",decoded);
+					}
+					if (decoded["type"] == "interaction"){
+						logMessage("chatLogs.json",decoded);
+					}
+					if (decoded["type"] == "question" || decoded["type"] == "questionSummary"){
+						logMessage("questionLogs.json",decoded);
+					}
 					
+					//gameHook.search(decoded).then(function(resp){
+					//}).catch(function(err){
+					//})
+					
+
 				} catch (e) {
 					console.log("Something went wrong during a message, whoops!")
 					console.log(e)
 				}
 			})
+
+
 		}
 		function tryConnection(){
 			request.get("https://api-quiz.hype.space/shows/now?type=",{headers: config_headers},function(error, response, body){
@@ -214,6 +312,7 @@ if (configExists == false){
 						const activeShow = showNow["active"];
 						const nextShow = showNow["nextShowTime"];
 						const nextShowPrize = showNow["nextShowPrize"];
+						const upcoming = showNow["upcoming"][0];
 						const showTime = new Date(nextShow);
 						if (activeShow){
 							const showId = showNow["showId"];
@@ -226,19 +325,109 @@ if (configExists == false){
 							const media = showNow["media"];
 							const broadcastFull = showNow["broadcastFull"];
 							if (connected == false){
-								handleConnectionToSocket(broadcast);
-								
+								handleConnectionToSocket(broadcast,gameType);
+								stream = new Stream({
+									name: 'hq-stream',
+									url: broadcast["streamUrl"],
+									port: 6542,
+									ffmpegOptions: { // options ffmpeg flags
+									  '-q': '1', // an option with no neccessary value uses a blank string
+									  
+									}
+								  });
+								  stream.start();
 							}
 						}else{
-							console.log("Next show in: "+showTime)
+							const showTime = new Date(nextShow);
+							let days = moment(nextShow).diff(new Date(),'day')%24;
+							let hours = moment(nextShow).diff(new Date(),'hour')%60;
+							let minutes = moment(nextShow).diff(new Date(),'minute')%60;
+							let seconds = moment(nextShow).diff(new Date(),'second')%60;
+							let timeString = "";
+							if (days !== 0){
+								timeString = timeString+" "+days+" days, "
+							}
+							if (hours !== 0){
+								timeString=timeString+" "+hours+":"
+							}
+							if (minutes !== 0){
+								timeString=timeString+minutes+":"
+							}
+							timeString=timeString+seconds+" seconds"
+							console.log("Next show is: "+upcoming["nextShowLabel"]["title"]+" in"+timeString)
 						}
 					} catch (e) {
 						console.log("Strange invalid JSON: "+body);
+						console.log(e)
 					}
 					
 				}
 			})
+
+			const debug = true;
+
+			if (debug){
+				handleConnectionToSocket(JSON.parse(`{
+					"active": true,
+					"atCapacity": false,
+					"showId": 5716,
+					"showType": "hq",
+					"startTime": "2018-07-05T04:00:00.000Z",
+					"nextShowTime": null,
+					"nextShowPrize": null,
+					"nextShowVertical": null,
+					"upcoming": [
+					{
+						"time": "2018-07-06T01:00:00.000Z",
+						"prize": "$5,000",
+						"vertical": "general"
+					}
+					],
+					"prize": 2500,
+					"broadcast": {
+					"broadcastId": 45758,
+					"userId": 38752,
+					"title": "Wirecast stream",
+					"status": 1,
+					"state": "live",
+					"channelId": 100,
+					"created": "2018-07-05T03:54:54.000Z",
+					"started": "2018-07-05T03:54:54.000Z",
+					"ended": null,
+					"permalink": "https://hy.pe/b/aWR",
+					"thumbnailData": null,
+					"tags": [],
+					"socketUrl": "https://ws-quiz.hype.space/ws/45758",
+					"streams": {
+						"source": "rtsp://edge-global.hype.space:1935/live/wirecast_high",
+						"passthrough": "rtsp://edge-global.hype.space:1935/live/wirecast_high",
+						"high": "rtsp://edge-global.hype.space:1935/live/wirecast_high",
+						"medium": "rtsp://edge-global.hype.space:1935/live/wirecast_medium",
+						"low": "rtsp://edge-global.hype.space:1935/live/wirecast_low"
+					},
+					"streamUrl": "rtsp://edge-global.hype.space:1935/live/wirecast_high",
+					"streamKey": "wirecast",
+					"relativeTimestamp": 207739,
+					"links": {
+						"self": "/broadcasts/45758",
+						"transcript": "/broadcasts/45758/transcript",
+						"viewers": "/broadcasts/45758/viewers"
+					}
+					},
+					"gameKey": "hq:23",
+					"vertical": "general",
+					"broadcastFull": false
+				}`),"trivia",true);
+				}
 		}
-		setTimeout(tryConnection, 500);
+		
+		setInterval(() => {
+			tryConnection();
+		}, 500)
+
+		http.listen(port, function(){
+			console.log(`listening on *:${port}`);
+		  });
+
 	});
 }
