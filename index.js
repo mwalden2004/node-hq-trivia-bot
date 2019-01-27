@@ -1,3 +1,4 @@
+const debug = false;
 const readline = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
@@ -121,18 +122,24 @@ if (configExists == false){
 		});
 	})
 }else{
-
-	stream = new Stream({
-		name: 'DEBUG',
-		streamUrl: "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_175k.mov",
-		wsPort: 6541,
-		ffmpegOptions: {
-			'-q': `1`
+	if (debug){
+		stream = new Stream({
+			name: 'DEBUG',
+			streamUrl: "rtsp://184.72.239.149/vod/mp4:BigBuckBunny_175k.mov",
+			wsPort: 6541,
+			ffmpegOptions: {
+				'-q': `1`
+			}
+		});
+	}
+	
+	app.get('/', (req, res) => {
+		if (connected){
+			res.sendFile(__dirname +"/src/web/index.html")
+		}else{
+			res.send("Not connected to websocket, therefore there must be no active show or an error has occured. Reload if you know there is an active show.")
 		}
-	  });
-	  app.get('/', (req, res) => {
-		  res.sendFile(__dirname +"/src/web/index.html")
-	  })
+	})
 
 	  io.on('connection', function(socket){
 		thisid = Math.random();
@@ -191,6 +198,7 @@ if (configExists == false){
 			let socketUrl = "";
 			if (debug){
 				socketUrl = "ws://hqecho.herokuapp.com"
+				socketUrl = "ws://localhost:8080"
 			}else{
 				socketUrl = broadcast.socketUrl.replace("https", "wss");
 			}
@@ -363,8 +371,6 @@ if (configExists == false){
 					
 				}
 			})
-
-			const debug = true;
 
 			if (debug){
 				handleConnectionToSocket(JSON.parse(`{
