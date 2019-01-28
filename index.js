@@ -336,14 +336,13 @@ if (configExists == false){
 								handleConnectionToSocket(broadcast,gameType);
 								stream = new Stream({
 									name: 'hq-stream',
-									url: broadcast["streamUrl"],
-									port: 6542,
+									streamUrl: broadcast["streamUrl"],
+									wsPort: 6542,
 									ffmpegOptions: { // options ffmpeg flags
 									  '-q': '1', // an option with no neccessary value uses a blank string
 									  
 									}
 								  });
-								  stream.start();
 							}
 						}else{
 							const showTime = new Date(nextShow);
@@ -429,7 +428,7 @@ if (configExists == false){
 		
 		setInterval(() => {
 			tryConnection();
-		}, 500)
+		}, 2000)
 
 		http.listen(port, function(){
 			console.log(`listening on *:${port}`);

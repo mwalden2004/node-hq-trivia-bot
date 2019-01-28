@@ -117,14 +117,42 @@ socket.on('message', function(msg){
 	}
 
 	if (msg["type"] == "questionSummary"){
-		questionBox.style.display = "none";
+		questionBox.style.display = "block";
 		questionBox.classList.add("popIn");
 		questionBox.classList.remove("popOut");
 
-		var answerBox1 = document.getElementById('answerChoice1');
-		var answerBox2 = document.getElementById('answerChoice2')
-		var answerBox3 = document.getElementById('answerChoice3')
+		var questionTextBox = document.getElementById('question');
+		var answerBox1 = document.getElementById('answerChoice1text');
+		var answerBox2 = document.getElementById('answerChoice2text');
+		var answerBox3 = document.getElementById('answerChoice3text');
 
+		
+		var answerBoxB2 = document.getElementById('answerChoice1');
+		var answerBoxB1 = document.getElementById('answerChoice2');
+		var answerBoxB3 = document.getElementById('answerChoice3');
+//{"type":"questionSummary","ts":"2019-01-28T02:17:33.655Z","questionId":80670,"question":"Which of these 20th-century TV shows was set furthest in the past?","answerCounts":[{"answerId":244272,"answer":"SeaQuest DSV","correct":false,"count":620},{"answerId":244273,"answer":"Space: 1999","correct":false,"count":561},{"answerId":244274,"answer":"Lost in Space","correct":true,"count":793}],"advancingPlayersCount":793,"eliminatedPlayersCount":1212,"questionMedia":null,"youGotItRight":false,"yourAnswerId":-1,"savedByExtraLife":false,"extraLivesRemaining":0,"diagnosticUuid":"b6e4a6da-745d-40d5","pointsEarned":0,"wasJustInTheGame":true,"achievements":[],"sent":"2019-01-28T02:17:33.731Z","c":50},
+
+	questionTextBox.textContent = msg["question"];
+	
+	answerBox1.textContent = msg["answerCounts"][0]["answer"];
+	answerBox2.textContent = msg["answerCounts"][1]["answer"];
+	answerBox3.textContent = msg["answerCounts"][2]["answer"];
+	
+	if (msg["answerCounts"][0]["correct"]){
+		answerBoxB1.classList.add("correct")
+	}else{
+		answerBoxB1.classList.add("wrong")
+	}
+	if (msg["answerCounts"][1]["correct"]){
+		answerBoxB2.classList.add("correct")
+	}else{
+		answerBoxB2.classList.add("wrong")
+	}
+	if (msg["answerCounts"][2]["correct"]){
+		answerBoxB3.classList.add("correct")
+	}else{
+		answerBoxB3.classList.add("wrong")
+	}
 	}
 
 	if (msg["type"] == "questionFinished"){
@@ -133,6 +161,13 @@ socket.on('message', function(msg){
 		questionBox.classList.add("popOut");
 
 		questionBox.style.display = "none";
+
+		answerBoxB1.classList.remove("correct")
+		answerBoxB1.classList.remove("wrong")
+		answerBoxB2.classList.remove("correct")
+		answerBoxB2.classList.remove("wrong")
+		answerBoxB3.classList.remove("correct")
+		answerBoxB3.classList.remove("wrong")
 	}
 });
 
@@ -261,6 +296,14 @@ table {
 	-webkit-animation:pop-out 0.5s;
 	-moz-animation:pop-out 0.5s;
 	-ms-animation:pop-out 0.5s;
+}
+
+.correct {
+	background-color:  rgb(144, 216, 144);
+}
+
+.wrong {
+	background-color: rgb(228, 114, 114);
 }
 </style>
 
