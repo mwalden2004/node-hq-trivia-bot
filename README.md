@@ -17,6 +17,9 @@ Warning: This bot is against the TOS of HQ-Trivia I do not condone the actions o
  Install Node.JS and NPM.
  Install packages with npm: npm install,
  Run index.js with node
+ Enter Phone Number,
+ Put number you received on your phone.
+ Restart node and you have a bot.
  
  # Disclaimer Important
  
