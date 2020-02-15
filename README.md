@@ -2,6 +2,9 @@
 
 Warning: This bot is against the TOS of HQ-Trivia I do not condone the actions of using this bot for cheating.   DISCLAIMER: I AM NOT RESPONSIBLE FOR ANY ILLEGAL USAGE OF THIS PROGRAM THE USER IS RESPONSIBLE FOR CHECK RELEVANT LAWS AND PROCEDURES.    THIS IS INTENDED FOR EDUCATIONAL PURPOSES ONLY.
 
+# HQ-Trivia Shutdown
+HQ-Trivia is shutting down, this code base hasn't, and will continue not to be maintained. This repo will be archived. RIP HQ, low-key gonna miss the first memories.
+
 # Node HQ Trivia Bot Rewrite
 
  Due to HQ disabling people from accessing there Beaerer Token, and my old bot working not working on the newest version of Node.JS I decided to rewrite a majority of everything, and perhaps make it work with HQ Words. This bot is not completed, this allows you to watch the game in your browser at http://localhost but this feature is expermiental and probably going to be removed in the future.
